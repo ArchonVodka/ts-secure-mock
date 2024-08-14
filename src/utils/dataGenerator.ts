@@ -12,30 +12,28 @@ const project = new Project({
  * @param type Тип данных
  * @returns Сгенерированные данные
  */
-export function generateDataFromType(type: Type, depth: number = 0): any {
-  if (depth > 5) {
-    return "Max depth reached"; // Предотвращение бесконечной рекурсии
-  }
-
+export function generateDataFromType(
+  type: Type,
+  ensureNumber: boolean = false
+): any {
   if (type.isUnion()) {
     const unionTypes = type.getUnionTypes();
-    const results = [];
+    const isNullable = unionTypes.some((t) => t.isNull());
+    const nonNullTypes = unionTypes.filter((t) => !t.isNull());
 
-    // Генерируем данные для всех подтипов в объединении
-    for (const unionType of unionTypes) {
-      const result = generateDataFromType(unionType, depth + 1);
-      if (result !== undefined) {
-        results.push(result);
-      }
+    // Если ensureNumber установлен и тип включает number, возвращаем number
+    if (ensureNumber && nonNullTypes.some((t) => t.isNumber())) {
+      return faker.datatype.number();
     }
 
-    // Если есть null, добавляем его отдельно
-    if (unionTypes.some((t) => t.isNull())) {
-      results.push(null);
+    // Если тип может быть null, случайно возвращаем null
+    if (isNullable && Math.random() < 0.5) {
+      return null;
     }
 
-    // Возвращаем массив сгенерированных данных
-    return results;
+    // Выбираем случайный не-null тип для генерации данных
+    const randomType = faker.helpers.arrayElement(nonNullTypes);
+    return generateDataFromType(randomType, ensureNumber);
   }
 
   if (type.isString()) {
@@ -57,7 +55,7 @@ export function generateDataFromType(type: Type, depth: number = 0): any {
       const valueDeclaration = prop.getValueDeclaration();
       if (valueDeclaration) {
         const propType = valueDeclaration.getType();
-        data[propName] = generateDataFromType(propType, depth + 1);
+        data[propName] = generateDataFromType(propType, ensureNumber);
       } else {
         data[propName] = `Unknown type for property: ${propName}`;
       }
@@ -66,19 +64,16 @@ export function generateDataFromType(type: Type, depth: number = 0): any {
   } else if (type.isArray()) {
     const elementType = type.getArrayElementType();
     if (elementType) {
-      // Генерируем массив с элементами, включая все возможные подтипы
-      const elementResults = generateDataFromType(elementType, depth + 1);
-      if (Array.isArray(elementResults)) {
-        return elementResults;
-      } else {
-        return [elementResults];
-      }
+      // Генерируем массив с несколькими элементами
+      return Array.from({ length: 3 }, () =>
+        generateDataFromType(elementType, ensureNumber)
+      );
     }
     return [];
   } else if (type.isTuple()) {
     const elementTypes = type.getTupleElements();
-    return elementTypes.map((elementType) =>
-      generateDataFromType(elementType, depth + 1)
+    return elementTypes.map((elementType, index) =>
+      generateDataFromType(elementType, index === 0)
     );
   } else {
     return `Unsupported type: ${type.getText()}`;
