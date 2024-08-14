@@ -12,7 +12,32 @@ const project = new Project({
  * @param type Тип данных
  * @returns Сгенерированные данные
  */
-export function generateDataFromType(type: Type): any {
+export function generateDataFromType(type: Type, depth: number = 0): any {
+  if (depth > 5) {
+    return "Max depth reached"; // Предотвращение бесконечной рекурсии
+  }
+
+  if (type.isUnion()) {
+    const unionTypes = type.getUnionTypes();
+    const results = [];
+
+    // Генерируем данные для всех подтипов в объединении
+    for (const unionType of unionTypes) {
+      const result = generateDataFromType(unionType, depth + 1);
+      if (result !== undefined) {
+        results.push(result);
+      }
+    }
+
+    // Если есть null, добавляем его отдельно
+    if (unionTypes.some((t) => t.isNull())) {
+      results.push(null);
+    }
+
+    // Возвращаем массив сгенерированных данных
+    return results;
+  }
+
   if (type.isString()) {
     return faker.lorem.word();
   } else if (type.isNumber()) {
@@ -32,7 +57,7 @@ export function generateDataFromType(type: Type): any {
       const valueDeclaration = prop.getValueDeclaration();
       if (valueDeclaration) {
         const propType = valueDeclaration.getType();
-        data[propName] = generateDataFromType(propType);
+        data[propName] = generateDataFromType(propType, depth + 1);
       } else {
         data[propName] = `Unknown type for property: ${propName}`;
       }
@@ -41,20 +66,20 @@ export function generateDataFromType(type: Type): any {
   } else if (type.isArray()) {
     const elementType = type.getArrayElementType();
     if (elementType) {
-      return [
-        generateDataFromType(elementType),
-        generateDataFromType(elementType),
-        generateDataFromType(elementType),
-      ];
+      // Генерируем массив с элементами, включая все возможные подтипы
+      const elementResults = generateDataFromType(elementType, depth + 1);
+      if (Array.isArray(elementResults)) {
+        return elementResults;
+      } else {
+        return [elementResults];
+      }
     }
     return [];
   } else if (type.isTuple()) {
     const elementTypes = type.getTupleElements();
-    return elementTypes.map((elementType) => generateDataFromType(elementType));
-  } else if (type.isUnion()) {
-    const unionTypes = type.getUnionTypes();
-    const randomType = faker.helpers.arrayElement(unionTypes);
-    return generateDataFromType(randomType);
+    return elementTypes.map((elementType) =>
+      generateDataFromType(elementType, depth + 1)
+    );
   } else {
     return `Unsupported type: ${type.getText()}`;
   }
