@@ -13,9 +13,6 @@ const project = new Project({
  * @returns Сгенерированные данные
  */
 
-import { faker } from "@faker-js/faker";
-import { Type } from "ts-morph"; // Предполагается, что вы используете ts-morph для работы с типами
-
 export function generateDataFromType(type: Type): any {
   if (type.isUnion()) {
     const unionTypes = type.getUnionTypes();
