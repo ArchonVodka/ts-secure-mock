@@ -8,6 +8,9 @@ import {
   logCertificateExpiration,
 } from "./utils/certificate";
 import { generateDataFromType, getTypeFromConfig } from "./utils/dataGenerator";
+import swaggerUi from "swagger-ui-express";
+import { generateSwaggerSpec } from "./utils/swagger";
+// import swaggerJsdoc from "swagger-jsdoc";
 
 /**
  * Запускает mock-сервер на основе конфигурации из файла mock.ts.
@@ -89,8 +92,13 @@ export function startMockServer() {
   // Используем порт из конфигурации
   const PORT = config.port || 3000;
 
+  // Генерация и подключение Swagger UI
+  const swaggerSpec = generateSwaggerSpec();
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
   // Запуск HTTPS сервера
   https.createServer(options, app).listen(PORT, () => {
     console.log(`Создано на https://localhost:${PORT}`);
+    console.log(`Swagger UI доступен на https://localhost:${PORT}/api-docs`);
   });
 }

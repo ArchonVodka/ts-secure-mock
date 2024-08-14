@@ -12,19 +12,15 @@ const project = new Project({
  * @param type Тип данных
  * @returns Сгенерированные данные
  */
-export function generateDataFromType(
-  type: Type,
-  ensureNumber: boolean = false
-): any {
+
+import { faker } from "@faker-js/faker";
+import { Type } from "ts-morph"; // Предполагается, что вы используете ts-morph для работы с типами
+
+export function generateDataFromType(type: Type): any {
   if (type.isUnion()) {
     const unionTypes = type.getUnionTypes();
     const isNullable = unionTypes.some((t) => t.isNull());
     const nonNullTypes = unionTypes.filter((t) => !t.isNull());
-
-    // Если ensureNumber установлен и тип включает number, возвращаем number
-    if (ensureNumber && nonNullTypes.some((t) => t.isNumber())) {
-      return faker.datatype.number();
-    }
 
     // Если тип может быть null, случайно возвращаем null
     if (isNullable && Math.random() < 0.5) {
@@ -33,21 +29,31 @@ export function generateDataFromType(
 
     // Выбираем случайный не-null тип для генерации данных
     const randomType = faker.helpers.arrayElement(nonNullTypes);
-    return generateDataFromType(randomType, ensureNumber);
+    return generateDataFromType(randomType);
   }
 
   if (type.isString()) {
     return faker.lorem.word();
-  } else if (type.isNumber()) {
+  }
+
+  if (type.isNumber()) {
     return faker.datatype.number();
-  } else if (type.isBoolean()) {
+  }
+
+  if (type.isBoolean()) {
     return faker.datatype.boolean();
-  } else if (type.isNull()) {
+  }
+
+  if (type.isNull()) {
     return null;
-  } else if (type.isEnum()) {
+  }
+
+  if (type.isEnum()) {
     const enumValues = type.getUnionTypes().map((t) => t.getLiteralValue());
     return faker.helpers.arrayElement(enumValues);
-  } else if (type.isObject() && !type.isArray()) {
+  }
+
+  if (type.isObject() && !type.isArray()) {
     const properties = type.getProperties();
     const data: any = {};
     properties.forEach((prop) => {
@@ -55,29 +61,29 @@ export function generateDataFromType(
       const valueDeclaration = prop.getValueDeclaration();
       if (valueDeclaration) {
         const propType = valueDeclaration.getType();
-        data[propName] = generateDataFromType(propType, ensureNumber);
+        data[propName] = generateDataFromType(propType);
       } else {
         data[propName] = `Unknown type for property: ${propName}`;
       }
     });
     return data;
-  } else if (type.isArray()) {
+  }
+
+  if (type.isArray()) {
     const elementType = type.getArrayElementType();
     if (elementType) {
       // Генерируем массив с несколькими элементами
-      return Array.from({ length: 3 }, () =>
-        generateDataFromType(elementType, ensureNumber)
-      );
+      return Array.from({ length: 3 }, () => generateDataFromType(elementType));
     }
     return [];
-  } else if (type.isTuple()) {
-    const elementTypes = type.getTupleElements();
-    return elementTypes.map((elementType, index) =>
-      generateDataFromType(elementType, index === 0)
-    );
-  } else {
-    return `Unsupported type: ${type.getText()}`;
   }
+
+  if (type.isTuple()) {
+    const elementTypes = type.getTupleElements();
+    return elementTypes.map((elementType) => generateDataFromType(elementType));
+  }
+
+  return `Unsupported type: ${type.getText()}`;
 }
 
 /**

@@ -1,6 +1,6 @@
-# Mock Server Library
+# TS Secure Mock
 
-Mock Server Library is a tool for creating a local mock server with HTTPS support that automatically generates responses based on a TypeScript configuration. This library is useful for testing and development, allowing developers to quickly create API endpoints with mock data.
+TS Secure Mock is a tool for creating a local mock server with HTTPS support that automatically generates responses based on a TypeScript configuration. This library is useful for testing and development, allowing developers to quickly create API endpoints with mock data.
 
 ## Installation
 
@@ -47,7 +47,7 @@ Mock Server Library is a tool for creating a local mock server with HTTPS suppor
    ```typescript
    // src/mock.ts
 
-   // Определение типа Item
+   // Definition of Item type
    export type Item = {
      id: number;
      name: string;
@@ -55,9 +55,9 @@ Mock Server Library is a tool for creating a local mock server with HTTPS suppor
      available: boolean;
    };
 
-   // Конфигурация API
+   // API Configuration
    export default {
-     port: 3000, // Порт сервера
+     port: 3000, // Server port
      routes: [
        {
          method: "GET",
@@ -68,8 +68,8 @@ Mock Server Library is a tool for creating a local mock server with HTTPS suppor
        {
          method: "POST",
          path: "/api/items",
-         data: "Item", // Ссылка на тип Item (Важно! Чтобы создавать response на основе типов - их имена должны совпадать.)
-         timeout: 1000, // Таймаут в миллисекундах
+         data: "Item", // Reference to the Item type (Important! To create responses based on types, their names must match.)
+         timeout: 1000, // Timeout in milliseconds
        },
      ],
    };
@@ -80,11 +80,11 @@ Mock Server Library is a tool for creating a local mock server with HTTPS suppor
 **_Use the following command to start the mock server:_**
 
 ```bash
-npx mock-server-library
+npx ts-secure-mock
 ```
 
 The server will automatically generate SSL certificates if they are missing and add them to .gitignore.
 
-**_Проверка работы сервера:_**
+**_Checking the Server:_**
 
 Once started, the server will be available at https://localhost:3000 (or another port specified in the configuration).
