@@ -4,11 +4,15 @@ TS Secure Mock is a tool for creating a local mock server with HTTPS support tha
 
 ## Installation
 
-1. **Install the library in your project**
+**Local installation**
 
-   ```bash
-   npm install path/to/mock-server-library
-   ```
+```package.json
+ "dependencies": {
+  "ts-secure-mock": "file:path/to/file"
+ }
+```
+
+> Example: "file:../ts-secure-mock"
 
 ## WINDOWS: Installing mkcert
 
