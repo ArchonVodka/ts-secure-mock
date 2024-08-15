@@ -95,6 +95,7 @@ The server will automatically generate SSL certificates if they are missing and 
 **_Checking the Server:_**
 
 Once started, the server will be available at https://localhost:3000 (or another port specified in the configuration).
+Swagger will also be automatically generated with all supporting specs at https://localhost:3000/api-docs.
 
 ## Supported types TypeScript
 
