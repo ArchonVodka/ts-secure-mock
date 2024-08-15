@@ -1,6 +1,7 @@
 import path from "path";
 import { Type } from "ts-morph";
 import { getTypeFromConfig } from "./dataGenerator";
+import { faker } from "@faker-js/faker";
 
 // Интерфейс для маршрута
 interface RouteConfig {
@@ -79,33 +80,78 @@ export function generateSwaggerSpec(): any {
  * @returns Схема OpenAPI
  */
 function convertTypeToSchema(type: Type): any {
-  if (type.isUnion()) {
+  if (type.isEnum()) {
+    const enumValues = type.getUnionTypes().map((t) => t.getLiteralValue());
+    return {
+      type: "enum",
+      enum: enumValues,
+    };
+  }
+  if (type.isUnion() && !type.isBoolean()) {
     const unionTypes = type.getUnionTypes();
-    const isNullable = unionTypes.some((t) => t.isNull());
+    const isNullable = unionTypes.some((t) => t.isNull() || t.isUndefined());
     const nonNullTypes = unionTypes.filter((t) => !t.isNull());
 
-    if (nonNullTypes.length === 1) {
-      const schema = convertTypeToSchema(nonNullTypes[0]);
-      if (isNullable) {
-        schema.nullable = true;
-      }
-      return schema;
+    // if (nonNullTypes.length < 0) {
+    const schema = convertTypeToSchema(
+      faker.helpers.arrayElement(nonNullTypes)
+    );
+    if (isNullable) {
+      schema.nullable = true;
     }
+    return schema;
+  }
+  // }
+  if (type.isTuple()) {
+    console.log(type.getTupleElements().map((t) => convertTypeToSchema(t)));
+    console.log({
+      isString: type.isString(),
+      isLiteral: type.isLiteral(),
+      isArray: type.isArray(),
+      isObject: type.isObject(),
+    });
+
+    const properties: Record<string, any> = {};
+    type.getTupleElements().forEach((prop, index) => {
+      properties[index] = convertTypeToSchema(prop);
+    });
+
+    console.log("props obj", properties);
+
+    return {
+      type: "object",
+      // items: type.getTupleElements().map((t) => convertTypeToSchema(t)),
+      properties: properties,
+    };
   }
 
   if (type.isString()) {
     return { type: "string" };
-  } else if (type.isNumber()) {
+  }
+
+  if (type.isNull() || type.isUndefined()) {
+    return { type: "null" };
+  }
+
+  if (type.isLiteral()) {
+    const literal = type.getLiteralValue();
+    return { type: typeof literal, value: literal };
+  }
+  if (type.isNumber()) {
     return { type: "number" };
-  } else if (type.isBoolean()) {
+  }
+  if (type.isBoolean()) {
     return { type: "boolean" };
-  } else if (type.isArray()) {
-    const elementType = type.getArrayElementType();
+  }
+  if (type.isArray()) {
+    const elementType = type.getArrayElementTypeOrThrow();
     return {
       type: "array",
-      items: elementType ? convertTypeToSchema(elementType) : {},
+      items: convertTypeToSchema(elementType),
     };
-  } else if (type.isObject()) {
+  }
+
+  if (type.isObject() && !type.isArray() && !type.isLiteral()) {
     const properties: Record<string, any> = {};
     type.getProperties().forEach((prop) => {
       const propName = prop.getName();

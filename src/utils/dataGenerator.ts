@@ -14,13 +14,17 @@ const project = new Project({
  */
 
 export function generateDataFromType(type: Type): any {
-  if (type.isUnion()) {
+  if (type.isUnion() && !type.isBoolean()) {
     const unionTypes = type.getUnionTypes();
     const isNullable = unionTypes.some((t) => t.isNull());
     const nonNullTypes = unionTypes.filter((t) => !t.isNull());
+    console.log(
+      "union",
+      unionTypes.map((t) => t.isNull())
+    );
 
     // Если тип может быть null, случайно возвращаем null
-    if (isNullable && Math.random() < 0.5) {
+    if (isNullable && faker.datatype.boolean()) {
       return null;
     }
 
@@ -29,20 +33,36 @@ export function generateDataFromType(type: Type): any {
     return generateDataFromType(randomType);
   }
 
+  if (type.isTuple()) {
+    return type.getTupleElements().map((t) => generateDataFromType(t));
+  }
+
   if (type.isString()) {
     return faker.lorem.word();
+  }
+
+  if (type.isLiteral()) {
+    return type.getLiteralValue();
   }
 
   if (type.isNumber()) {
     return faker.datatype.number();
   }
 
-  if (type.isBoolean()) {
+  if (type.isNumberLiteral()) {
+    return type.getLiteralValue();
+  }
+
+  if (type.isBooleanLiteral() || type.isBoolean()) {
     return faker.datatype.boolean();
   }
 
   if (type.isNull()) {
     return null;
+  }
+
+  if (type.isUndefined() || type.isUnknown()) {
+    return;
   }
 
   if (type.isEnum()) {
@@ -55,6 +75,7 @@ export function generateDataFromType(type: Type): any {
     const data: any = {};
     properties.forEach((prop) => {
       const propName = prop.getName();
+
       const valueDeclaration = prop.getValueDeclaration();
       if (valueDeclaration) {
         const propType = valueDeclaration.getType();

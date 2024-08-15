@@ -30,63 +30,74 @@ export function startMockServer() {
   logCertificateExpiration("localhost.pem");
 
   // Загружаем конфигурацию
-  const configPath = path.resolve(process.cwd(), "src/mock.ts");
-  const config = require(configPath).default;
+
+  const getGonfig = () => {
+    const configPath = path.resolve(process.cwd(), "src/mock.ts");
+    const config = require(configPath).default;
+    return { config, configPath };
+  };
 
   /**
    * Настраивает маршруты на основе конфигурации.
    */
-  function setupRoutes() {
-    config.routes.forEach((route: any) => {
-      const responseData =
-        typeof route.data === "string"
-          ? generateDataFromType(getTypeFromConfig(route.data))
-          : route.data;
+  function setupRoutes(config: any) {
+    config.routes.forEach(
+      (route: {
+        path: string;
+        data: any;
+        method: string;
+        timeout: number | null;
+      }) => {
+        // Функция для генерации данных
+        const generateResponseData = () => {
+          return typeof route.data === "string"
+            ? generateDataFromType(getTypeFromConfig(route.data))
+            : route.data;
+        };
 
-      const responseArray =
-        typeof route.iterable === "number"
-          ? Array(route.iterable).fill(responseData)
-          : responseData;
-
-      if (route.method === "GET") {
-        app.get(route.path, (req, res) => {
-          console.log(`Выполнение - [GET]${route.path}`);
+        // Общая функция для обработки запросов
+        const handleRequest = (_: any, res: any) => {
+          console.log(`[${route.method}] ${route.path}`);
+          const responseData = generateResponseData();
           setTimeout(() => {
-            res.json(responseArray);
+            res.json(responseData);
           }, route.timeout || 0);
-        });
-      } else if (route.method === "POST") {
-        app.post(route.path, (req, res) => {
-          console.log(`Выполнение - [POST]${route.path}`);
+        };
 
-          setTimeout(() => {
-            res.json(responseArray);
-          }, route.timeout || 0);
-        });
+        // Установка маршрутов
+        if (route.method === "GET") {
+          app.get(route.path, handleRequest);
+        } else if (route.method === "POST") {
+          app.post(route.path, handleRequest);
+        }
+
+        console.log(route.path);
       }
-      console.log(route.path);
-    });
+    );
   }
 
   /**
    * Перезагружает маршруты при изменении конфигурации.
    */
-  function reloadRoutes() {
-    Object.keys(require.cache).forEach((id) => {
-      if (id.endsWith("mock.ts")) {
-        delete require.cache[id];
-      }
-    });
-    setupRoutes();
-    console.log("API запущено");
-  }
+  // TODO: сделать рабочей перезагрузку рутов
+  // function reloadRoutes() {
+  //   Object.keys(require.cache).forEach((id) => {
+  //     if (id.endsWith("mock.ts")) {
+  //       delete require.cache[id];
+  //     }
+  //   });
+  //   setupRoutes(getGonfig().config);
+  //   console.log("API запущено");
+  // }
 
-  setupRoutes();
+  const { config, configPath } = getGonfig();
+
+  setupRoutes(getGonfig().config);
 
   // Отслеживаем изменения в mock.ts
   chokidar.watch(configPath).on("change", () => {
-    console.log("mock.ts изменен. Перезагрузка API...");
-    reloadRoutes();
+    console.log("mock.ts изменен. Требуется перезагрузка.");
+    // reloadRoutes();
   });
 
   // Используем порт из конфигурации
@@ -98,7 +109,7 @@ export function startMockServer() {
 
   // Запуск HTTPS сервера
   https.createServer(options, app).listen(PORT, () => {
-    console.log(`Создано на https://localhost:${PORT}`);
-    console.log(`Swagger UI доступен на https://localhost:${PORT}/api-docs`);
+    console.log(`API - https://localhost:${PORT}`);
+    console.log(`Swagger - https://localhost:${PORT}/api-docs`);
   });
 }
