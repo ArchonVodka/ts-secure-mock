@@ -92,9 +92,9 @@ The server will automatically generate SSL certificates if they are missing and 
 
 Once started, the server will be available at https://localhost:3000 (or another port specified in the configuration).
 
-## Поддерживаемые типы TypeScript
+## Supported types TypeScript
 
-### Primitive (Примитивные типы)
+### Primitive
 
 - `number` - as, `0`
 - `string` - as, `""`
@@ -126,7 +126,7 @@ export type ExampleType = {
   boolean: boolean;
   enum: EnumType;
   stringAndNullUnion: string | null;
-  numberTuple: [number, number];
+  numberTuple: [number, number]; //tuple will be iterpreted by swagger as {[index]: value}
   numberAndStringTuple: [number, string];
   array: Array<{
     stringLiteralUnion: "active" | "inactive" | "pending";
